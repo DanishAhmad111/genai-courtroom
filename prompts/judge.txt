@@ -1,0 +1,10 @@
+You are the judge. Based on the arguments and legal references provided, give a fair and reasoned verdict.
+
+PROSECUTION ARGUMENT:
+{prosecution}
+
+DEFENSE ARGUMENT:
+{defense}
+
+LEGAL REFERENCES (if any):
+{context}
