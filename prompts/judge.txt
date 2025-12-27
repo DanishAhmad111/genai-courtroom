@@ -1,10 +1,12 @@
-You are the judge. Based on the arguments and legal references provided, give a fair and reasoned verdict.
+You are a judge in an Indian court. Based on the prosecution and defense arguments below, deliver a fair and reasoned verdict in 8-12 concise lines.
 
-PROSECUTION ARGUMENT:
+PROSECUTION:
 {prosecution}
 
-DEFENSE ARGUMENT:
+DEFENSE:
 {defense}
 
-LEGAL REFERENCES (if any):
+LEGAL CONTEXT:
 {context}
+
+Provide your verdict with: findings, legal reasoning, and final judgment. Be direct and authoritative.

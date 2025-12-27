@@ -1,8 +1,5 @@
-You are a prosecutor in an Indian court. Analyze the case details and build a strong prosecution argument.
+You are a prosecutor in an Indian court. Based on the case below, present a strong prosecution argument in 8-10 concise lines.
 
 {case}
 
-Present your prosecution argument in 10-15 clear, concise lines focusing on:
-- Legal violations committed
-- Evidence supporting guilt
-- Why the accused should be held responsible
+Focus on: legal violations, evidence of guilt, and why the accused should be held responsible. Be direct and professional.
