@@ -50,6 +50,21 @@ def search_top_chunks(query: str, index_path: str = INDEX_PATH, k: int = 3):
     index = faiss.read_index(index_path)
     with open(index_path.replace(".faiss", ".pkl"), "rb") as f:
         chunks = pickle.load(f)
+    
+    # Handle empty chunks
+    if not chunks:
+        raise ValueError("FAISS index is empty. Please upload a PDF document first.")
+    
     query_embedding = embedding_model.encode([query], normalize_embeddings=True)
     D, I = index.search(np.array(query_embedding).astype("float32"), k)
-    return [chunks[i] for i in I[0]]
+    
+    # Filter out invalid indices and return valid chunks
+    valid_results = []
+    for idx in I[0]:
+        if 0 <= idx < len(chunks):
+            valid_results.append(chunks[idx])
+    
+    if not valid_results:
+        raise ValueError("No relevant documents found. Please upload a PDF document first.")
+    
+    return valid_results

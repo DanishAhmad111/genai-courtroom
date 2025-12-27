@@ -15,18 +15,46 @@ _local_model = None
 _local_tok = None
 
 def _ensure_local():
-    """Lazily load the base model plus LoRA adapter once and cache globally."""
+    """Lazily load the base model plus LoRA adapter once and cache globally.
+    Supports both local paths and HuggingFace Hub model IDs."""
     global _local_model, _local_tok
     if _local_model is None:
         adapter_path = os.getenv("JUDGE_LORA_PATH", "judge-lora")
-        cfg = PeftConfig.from_pretrained(adapter_path)
-        base = AutoModelForCausalLM.from_pretrained(
-            cfg.base_model_name_or_path,
-            torch_dtype="auto",
-            device_map="auto" if torch.cuda.is_available() else None,
-        )
-        _local_model = PeftModel.from_pretrained(base, adapter_path)
-        _local_tok = AutoTokenizer.from_pretrained(cfg.base_model_name_or_path)
+        
+        # Check if it's a HuggingFace Hub model ID (contains /)
+        if "/" in adapter_path:
+            print(f"🌐 Downloading model from HuggingFace Hub: {adapter_path}")
+            # HuggingFace Hub will automatically cache the model
+            from huggingface_hub import snapshot_download
+            try:
+                # Download model if not cached
+                local_path = snapshot_download(
+                    repo_id=adapter_path,
+                    token=os.getenv("HF_TOKEN")  # Optional: for private models
+                )
+                adapter_path = local_path
+                print(f"✅ Model downloaded to: {adapter_path}")
+            except Exception as e:
+                print(f"❌ Failed to download model from HuggingFace: {e}")
+                print("💡 Tip: Make sure the model exists and you have access")
+                raise
+        else:
+            print(f"📁 Loading local model from: {adapter_path}")
+        
+        try:
+            cfg = PeftConfig.from_pretrained(adapter_path)
+            base = AutoModelForCausalLM.from_pretrained(
+                cfg.base_model_name_or_path,
+                torch_dtype="auto",
+                device_map="auto" if torch.cuda.is_available() else None,
+            )
+            _local_model = PeftModel.from_pretrained(base, adapter_path)
+            _local_tok = AutoTokenizer.from_pretrained(cfg.base_model_name_or_path)
+            print("✅ Model loaded successfully")
+        except Exception as e:
+            print(f"❌ Error loading model: {e}")
+            raise
+
 
 # Load a prompt from file
 def load_prompt(path):
@@ -42,7 +70,7 @@ def fill_prompt(template, **kwargs):
 # Call LLM (local LoRA if enabled, otherwise Groq API)
 import time
 
-def call_llm(prompt: str, model: str = "llama3-70b-8192", retries: int = 3):
+def call_llm(prompt: str, model: str = "llama-3.3-70b-versatile", retries: int = 3):
     """Generate a response using either the local LoRA-fine-tuned model or the remote Groq endpoint."""
     if USE_LOCAL_MODEL:
         _ensure_local()
@@ -64,6 +92,12 @@ def call_llm(prompt: str, model: str = "llama3-70b-8192", retries: int = 3):
         "Content-Type": "application/json"
     }
 
+    # Allow override via env var
+    model_override = os.getenv("GROQ_MODEL")
+    if model_override:
+        model = model_override
+    print(f"[call_llm] Using Groq model: {model}")
+
     data = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
@@ -84,7 +118,7 @@ def call_llm(prompt: str, model: str = "llama3-70b-8192", retries: int = 3):
 
     return "❌ Failed after retries."
 
-def call_hybrid_judge(prompt: str, model: str = "llama3-70b-8192", retries: int = 3):
+def call_hybrid_judge(prompt: str, model: str = "llama-3.3-70b-versatile", retries: int = 3):
     """Hybrid judge function that uses both fine-tuned and original models for enhanced judgment."""
     
     # Get response from fine-tuned model if available
@@ -113,6 +147,11 @@ def call_hybrid_judge(prompt: str, model: str = "llama3-70b-8192", retries: int 
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
+        # Allow override via env var
+        model_override = os.getenv("GROQ_MODEL")
+        if model_override:
+            model = model_override
+        print(f"[call_hybrid_judge] Using Groq model: {model}")
         data = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
@@ -144,6 +183,11 @@ Provide a final, well-reasoned verdict that incorporates the best insights from 
         
         # Use original model for synthesis to ensure coherent final output
         if api_key:
+            # Apply same override to synthesis call
+            model_override = os.getenv("GROQ_MODEL")
+            if model_override:
+                model = model_override
+            print(f"[call_hybrid_judge:synthesis] Using Groq model: {model}")
             synthesis_data = {
                 "model": model,
                 "messages": [{"role": "user", "content": synthesis_prompt}],
@@ -175,12 +219,13 @@ def run_courtroom(case):
     defense_template = load_prompt(os.path.join(base_dir, "prompts", "defense.txt"))
     judge_template = load_prompt(os.path.join(base_dir, "prompts", "judge.txt"))
 
-    # Step 1: RAG – search for relevant context
+    # Step 1: RAG – search for relevant context (optional)
     try:
-        top_chunks = search_top_chunks(case,k=2)
+        top_chunks = search_top_chunks(case, k=2)
         evidence = "\n".join(top_chunks)
-    except Exception as e:
-        evidence = "No legal context found from Constitution or FAISS index missing."
+    except (FileNotFoundError, ValueError, Exception) as e:
+        # No PDF uploaded or index missing - that's okay, proceed without RAG
+        evidence = ""
 
     # Step 2: Add evidence into the case
     enriched_case = f"CASE:\n{case}\n\nLEGAL REFERENCES (if any):\n{evidence}"

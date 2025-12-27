@@ -20,7 +20,7 @@ Simulate a courtroom trial using generative AI. Enter a case description, and th
 from rag.rag_utils import extract_text_from_pdf, chunk_text, build_faiss_index
 import tempfile
 
-uploaded_pdf = st.file_uploader("📄 Upload legal document (PDF)", type="pdf")
+uploaded_pdf = st.file_uploader("📄 Upload legal document (PDF) - Optional", type="pdf", help="Upload a PDF to add legal references to the trial. The app works without it too!")
 
 if uploaded_pdf:
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
