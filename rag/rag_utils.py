@@ -4,14 +4,10 @@ import os
 import pickle
 import numpy as np
 
-from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+from sentence_transformers import SentenceTransformer
 
-# Load BGE model from Hugging Face using LangChain (CPU)
-embedding_model = HuggingFaceBgeEmbeddings(
-    model_name="BAAI/bge-small-en-v1.5",
-    model_kwargs={'device': 'cpu'},
-    encode_kwargs={'normalize_embeddings': True}
-)
+# Load BGE model from Hugging Face using sentence-transformers directly (CPU)
+embedding_model = SentenceTransformer("BAAI/bge-small-en-v1.5", device='cpu')
 
 # Extract full text from a PDF file
 def extract_text_from_pdf(pdf_path):
@@ -38,7 +34,7 @@ def build_faiss_index(chunks, index_path: str = INDEX_PATH):
     # Ensure embeddings directory exists
     os.makedirs(os.path.dirname(index_path), exist_ok=True)
 
-    embeddings = embedding_model.embed_documents(chunks)
+    embeddings = embedding_model.encode(chunks, normalize_embeddings=True)
     index = faiss.IndexFlatL2(len(embeddings[0]))
     index.add(np.array(embeddings).astype("float32"))
     faiss.write_index(index, index_path)
@@ -54,6 +50,6 @@ def search_top_chunks(query: str, index_path: str = INDEX_PATH, k: int = 3):
     index = faiss.read_index(index_path)
     with open(index_path.replace(".faiss", ".pkl"), "rb") as f:
         chunks = pickle.load(f)
-    query_embedding = embedding_model.embed_query(query)
-    D, I = index.search(np.array([query_embedding]).astype("float32"), k)
+    query_embedding = embedding_model.encode([query], normalize_embeddings=True)
+    D, I = index.search(np.array(query_embedding).astype("float32"), k)
     return [chunks[i] for i in I[0]]
