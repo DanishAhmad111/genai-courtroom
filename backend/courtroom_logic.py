@@ -101,7 +101,9 @@ def call_llm(prompt: str, model: str = "llama-3.3-70b-versatile", retries: int =
     data = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.7
+        "temperature": 0.7,
+        "max_tokens": 500,  # Limit response length
+        "stop": ["\n\n\n", "---", "CASE:", "You are"]  # Stop on repetitive patterns
     }
 
     for attempt in range(retries):
@@ -155,7 +157,9 @@ def call_hybrid_judge(prompt: str, model: str = "llama-3.3-70b-versatile", retri
         data = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.7
+            "temperature": 0.7,
+            "max_tokens": 500,
+            "stop": ["\n\n\n", "---", "CASE:", "You are"]
         }
         
         for attempt in range(retries):
@@ -191,13 +195,14 @@ Provide a final, well-reasoned verdict that incorporates the best insights from 
             synthesis_data = {
                 "model": model,
                 "messages": [{"role": "user", "content": synthesis_prompt}],
-                "temperature": 0.6
+                "temperature": 0.6,
+                "max_tokens": 600,
+                "stop": ["\n\n\n", "---", "CASE:", "You are"]
             }
             synthesis_response = requests.post(endpoint, headers=headers, json=synthesis_data)
             if synthesis_response.status_code == 200:
                 final_verdict = synthesis_response.json()['choices'][0]['message']['content']
                 print("⚖️ Hybrid judgment synthesized successfully")
-                return final_verdict
         
         # Fallback: return fine-tuned response if synthesis fails
         return f"**HYBRID JUDGMENT**\n\n**Fine-tuned Analysis:**\n{finetuned_response}\n\n**Broad Analysis:**\n{original_response}"
