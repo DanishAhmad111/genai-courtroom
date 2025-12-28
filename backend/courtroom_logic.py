@@ -105,7 +105,7 @@ def call_llm(prompt: str, model: str = "llama-3.3-70b-versatile", retries: int =
         "max_tokens": 300,  # Reduced token limit
         "frequency_penalty": 1.5,  # Strongly penalize repetition
         "presence_penalty": 1.0,  # Encourage topic diversity
-        "stop": ["\n\n\n", "---", "CASE:", "You are", "The accused is"]
+        "stop": ["\n\n\n", "---", "CASE:", "You are"]
     }
 
     for attempt in range(retries):
@@ -163,7 +163,7 @@ def call_hybrid_judge(prompt: str, model: str = "llama-3.3-70b-versatile", retri
             "max_tokens": 300,
             "frequency_penalty": 1.5,
             "presence_penalty": 1.0,
-            "stop": ["\n\n\n", "---", "CASE:", "You are", "The accused is"]
+            "stop": ["\n\n\n", "---", "CASE:", "You are"]
         }
         
         for attempt in range(retries):
@@ -203,7 +203,7 @@ Provide a final, well-reasoned verdict that incorporates the best insights from 
                 "max_tokens": 400,
                 "frequency_penalty": 1.5,
                 "presence_penalty": 1.0,
-                "stop": ["\n\n\n", "---", "CASE:", "You are", "The accused is"]
+                "stop": ["\n\n\n", "---", "CASE:", "You are"]
             }
             synthesis_response = requests.post(endpoint, headers=headers, json=synthesis_data)
             if synthesis_response.status_code == 200:
