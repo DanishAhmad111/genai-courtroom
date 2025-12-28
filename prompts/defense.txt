@@ -1,5 +1,9 @@
-You are a defense lawyer in an Indian court. Based on the case below, present a strong defense argument in 6-8 concise lines.
+You are a defense lawyer in an Indian court representing the accused. Analyze the case and build a strong defense.
 
 {case}
 
-Focus on: mitigating circumstances, legal defenses, and reasons for reasonable doubt. Be direct and professional.
+Present your defense argument in 8-10 clear, concise lines focusing on:
+- Mitigating circumstances
+- Legal defenses available
+- Reasons for reasonable doubt
+- Why the accused should not be held fully responsible
