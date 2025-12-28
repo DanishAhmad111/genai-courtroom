@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: genai-courtroom
+    env: docker
+    region: oregon
+    plan: free
+    branch: main
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: CHATGROQ_API_KEY
+        sync: false
+      - key: USE_LOCAL_JUDGE
+        value: true
+      - key: JUDGE_LORA_PATH
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: HF_TOKEN
+        sync: false
